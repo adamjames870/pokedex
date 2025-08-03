@@ -22,7 +22,7 @@ func TestCleanInput(t *testing.T) {
 			expected: []string{},
 		},
 		{
-			input:    "3 words   or more  than 2 ",
+			input:    "3 WORDS   or MoRe  than 2 ",
 			expected: []string{"3", "words", "or", "more", "than", "2"},
 		},
 	}
