@@ -10,6 +10,14 @@ import (
 func main() {
 
 	commands := getCommands()
+	cfg := &commandConfig{}
+	cfg.nextUrl, cfg.prevUrl = "", ""
+	mapCmd := commands["map"]
+	mapbCmd := commands["mapb"]
+	mapCmd.config = cfg
+	mapbCmd.config = cfg
+	commands["map"] = mapCmd
+	commands["mapb"] = mapbCmd
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -34,7 +42,7 @@ func main() {
 			fmt.Println("Unknown command")
 			continue
 		}
-		err := cmd.callback()
+		err := cmd.callback(cmd.config)
 		if err != nil {
 			fmt.Printf("Error: %s", err)
 		}
@@ -46,13 +54,13 @@ func cleanInput(text string) []string {
 	return strings.Fields(strings.ToLower(text))
 }
 
-func commandExit() error {
+func commandExit(config *commandConfig) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(config *commandConfig) error {
 	commands := getCommands()
 	fmt.Println("Welcome to the Pokedex!")
 	for _, cmd := range commands {
@@ -61,21 +69,56 @@ func commandHelp() error {
 	return nil
 }
 
-func commandMap() error {
-	areas, err := GetLocationAreas(locationAreasUrl)
+func commandMap(config *commandConfig) error {
+
+	getUrl := locationAreasUrl
+	if config.nextUrl != "" {
+		getUrl = config.nextUrl
+	}
+	areas, err := GetLocationAreas(getUrl)
 	if IsErr(err) {
 		fmt.Printf("Error! %v", err)
 		return err
 	}
-	fmt.Println(areas[0].Results[0].Name)
+
+	config.nextUrl = areas.Next
+	if areas.Previous != nil {
+		config.prevUrl = *areas.Previous
+	} else {
+		config.prevUrl = ""
+	}
+
+	for _, locArea := range areas.Results {
+		fmt.Println(locArea.Name)
+	}
 	return nil
 }
 
-func commandMapB() error {
+func commandMapB(config *commandConfig) error {
+	if config.prevUrl == "" {
+		fmt.Println("You're on the first page")
+		return nil
+	}
+	areas, err := GetLocationAreas(config.prevUrl)
+	if IsErr(err) {
+		fmt.Printf("Error! %v", err)
+		return err
+	}
+
+	config.nextUrl = areas.Next
+	if areas.Previous != nil {
+		config.prevUrl = *areas.Previous
+	} else {
+		config.prevUrl = ""
+	}
+
+	for _, locArea := range areas.Results {
+		fmt.Println(locArea.Name)
+	}
 	return nil
 }
 
-func commandHealth() error {
+func commandHealth(config *commandConfig) error {
 	if ok, status := TestApi(); ok {
 		fmt.Println("Connection and response from API is good!")
 	} else {

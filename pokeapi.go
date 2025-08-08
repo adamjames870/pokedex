@@ -22,26 +22,27 @@ func TestApi() (bool, int) {
 
 }
 
-func GetLocationAreas(apiPath string) ([]locationArea, error) {
+func GetLocationAreas(apiPath string) (locationAreaResponse, error) {
+
+	var blankResponse locationAreaResponse
+
 	res, err := http.Get(apiPath)
 	if IsErr(err) {
-		return nil, err
+		return blankResponse, err
 	}
 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %s", res.Status)
+		return blankResponse, fmt.Errorf("unexpected status: %s", res.Status)
 	}
 
-	var result struct {
-		Results []locationArea `json:"results"`
-	}
+	var result locationAreaResponse
 
 	if err := json.NewDecoder(res.Body).Decode(&result); IsErr(err) {
-		return nil, fmt.Errorf("failed to decode: %w", err)
+		return blankResponse, fmt.Errorf("failed to decode: %w", err)
 	}
 
-	return result.Results, nil
+	return result, nil
 
 }
