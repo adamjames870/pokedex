@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var pokeapi PokeApi
+
 func main() {
 
 	commands := getCommands()
@@ -18,6 +20,8 @@ func main() {
 	mapbCmd.config = cfg
 	commands["map"] = mapCmd
 	commands["mapb"] = mapbCmd
+
+	pokeapi = NewPokeApi()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -75,7 +79,7 @@ func commandMap(config *commandConfig) error {
 	if config.nextUrl != "" {
 		getUrl = config.nextUrl
 	}
-	areas, err := GetLocationAreas(getUrl)
+	areas, err := pokeapi.GetLocationAreas(getUrl)
 	if IsErr(err) {
 		fmt.Printf("Error! %v", err)
 		return err
@@ -99,7 +103,7 @@ func commandMapB(config *commandConfig) error {
 		fmt.Println("You're on the first page")
 		return nil
 	}
-	areas, err := GetLocationAreas(config.prevUrl)
+	areas, err := pokeapi.GetLocationAreas(config.prevUrl)
 	if IsErr(err) {
 		fmt.Printf("Error! %v", err)
 		return err
@@ -119,10 +123,17 @@ func commandMapB(config *commandConfig) error {
 }
 
 func commandHealth(config *commandConfig) error {
-	if ok, status := TestApi(); ok {
+	if ok, status := pokeapi.TestApi(); ok {
 		fmt.Println("Connection and response from API is good!")
 	} else {
 		fmt.Printf("Failed to receive good response from API; status %v\n", status)
+	}
+	return nil
+}
+
+func commandCache(config *commandConfig) error {
+	for key, val := range pokeapi.pk.cache {
+		fmt.Printf("%s - %v\n", val.createdAt.Format("15:04:05"), key)
 	}
 	return nil
 }
@@ -157,6 +168,12 @@ func getCommands() map[string]cliCommand {
 			name:        "health",
 			description: "Checks the API and connection health",
 			callback:    commandHealth,
+			config:      nil,
+		},
+		"cache": {
+			name:        "check cache",
+			description: "Prints out the contents of the PokeCache",
+			callback:    commandCache,
 			config:      nil,
 		},
 	}

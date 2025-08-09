@@ -1,6 +1,9 @@
 package main
 
+import "time"
+
 const locationAreasUrl string = "https://pokeapi.co/api/v2/location-area/"
+const defaultDuration time.Duration = 5 * time.Second
 
 type locationArea struct {
 	Name string `json:"name"`
